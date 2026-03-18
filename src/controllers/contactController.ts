@@ -12,8 +12,8 @@ export interface ContactRequestBody {
   message: string;
 }
 
-export interface ContactRequest extends Request {
-  file?: any;
+export interface ContactRequest extends Request<{}, {}, ContactRequestBody> {
+  file?: Express.Multer.File;
 }
 
 export const submitContact = async (
