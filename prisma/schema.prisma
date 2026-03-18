@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model Contact {
+  id          String   @id @default(uuid())
+  name        String
+  email       String
+  phone       String?
+  subject     String
+  message     String
+  attachment  String?
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([createdAt(sort: Desc)])
+  @@index([email])
+}
+
+
+model Newsletter {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  isActive      Boolean   @default(true)
+  subscribedAt  DateTime  @default(now())
+  unsubscribedAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([isActive])
+}
+
+
+model Admin {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+}
