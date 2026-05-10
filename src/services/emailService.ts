@@ -30,6 +30,11 @@ class EmailService {
       connectionTimeout: 10000, // 10 seconds connection timeout
       greetingTimeout: 5000, // 5 seconds greeting timeout
       socketTimeout: 10000, // 10 seconds socket timeout
+      family: 4, // Force IPv4 to avoid IPv6 connectivity issues on cloud providers
+      dns: {
+        ipv4: true, // Prefer IPv4 for DNS resolution
+        ipv6: false, // Disable IPv6
+      },
     });
   }
 
