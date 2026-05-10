@@ -19,7 +19,7 @@ class EmailService {
     this.transporter = nodemailer.createTransport({
       host: config.smtp.host,
       port: config.smtp.port,
-      secure: false,
+      secure: config.smtp.port === 465, // true for 465, false for other ports
       auth: {
         user: config.smtp.user,
         pass: config.smtp.pass,
@@ -27,26 +27,61 @@ class EmailService {
       tls: {
         rejectUnauthorized: false,
       },
+      connectionTimeout: 10000, // 10 seconds connection timeout
+      greetingTimeout: 5000, // 5 seconds greeting timeout
+      socketTimeout: 10000, // 10 seconds socket timeout
     });
   }
 
-  async sendEmail(options: EmailOptions): Promise<boolean> {
+  async verifyConnection(): Promise<boolean> {
     try {
-      const mailOptions = {
-        from: config.smtp.from,
-        to: options.to,
-        subject: options.subject,
-        html: options.html,
-        attachments: options.attachments,
-      };
-
-      await this.transporter.sendMail(mailOptions);
-      logger.info(`Email sent successfully to ${options.to}`);
+      await this.transporter.verify();
+      logger.info('SMTP connection verified successfully');
       return true;
     } catch (error) {
-      logger.error('Error sending email:', error);
+      logger.error('SMTP connection verification failed:', error);
       return false;
     }
+  }
+
+  async sendEmail(options: EmailOptions, retryCount: number = 2): Promise<boolean> {
+    let lastError: any;
+    
+    for (let attempt = 1; attempt <= retryCount; attempt++) {
+      try {
+        const mailOptions = {
+          from: config.smtp.from,
+          to: options.to,
+          subject: options.subject,
+          html: options.html,
+          attachments: options.attachments,
+        };
+
+        await this.transporter.sendMail(mailOptions);
+        logger.info(`Email sent successfully to ${options.to}`);
+        return true;
+      } catch (error: any) {
+        lastError = error;
+        const errorMessage = error?.message || 'Unknown error';
+        const errorCode = error?.code || 'UNKNOWN';
+        
+        if (attempt < retryCount) {
+          logger.warn(`Email send attempt ${attempt} failed, retrying...`, {
+            message: errorMessage,
+            code: errorCode,
+          });
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        } else {
+          logger.error(`Error sending email to ${options.to} after ${retryCount} attempts:`, {
+            message: errorMessage,
+            code: errorCode,
+            command: error?.command,
+          });
+        }
+      }
+    }
+    return false;
   }
 
   async sendContactEmail(
