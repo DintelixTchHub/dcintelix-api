@@ -7,18 +7,24 @@ import app from "./app";
 import { config } from "./config/env";
 import { logger } from "./utils/logger";
 
-const server = http.createServer(app);
+// Export for Vercel serverless
+export default app;
 
-server.listen(config.port, () => {
-  logger.info(`🚀 Server running on port ${config.port}`);
-  logger.info(`Environment: ${config.nodeEnv}`);
-});
+// Local development mode
+if (process.env.NODE_ENV !== 'production') {
+  const server = http.createServer(app);
 
-// Graceful shutdown
-process.on("SIGTERM", () => {
-  logger.info("SIGTERM received, shutting down gracefully");
-  server.close(() => {
-    logger.info("Server closed");
-    process.exit(0);
+  server.listen(config.port, () => {
+    logger.info(`🚀 Server running on port ${config.port}`);
+    logger.info(`Environment: ${config.nodeEnv}`);
   });
-});
+
+  // Graceful shutdown
+  process.on("SIGTERM", () => {
+    logger.info("SIGTERM received, shutting down gracefully");
+    server.close(() => {
+      logger.info("Server closed");
+      process.exit(0);
+    });
+  });
+}

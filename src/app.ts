@@ -54,10 +54,11 @@ app.get('/api/health', (req: Request, res: Response) => {
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-// Initialize database connection
+// Initialize database connection with proper error handling
 connectDatabase().catch((err) => {
   logger.error('Database connection failed', err);
-  process.exit(1);
+  // Don't exit on Vercel - just log the error
+  // Serverless functions should handle errors gracefully
 });
 
 export default app;
