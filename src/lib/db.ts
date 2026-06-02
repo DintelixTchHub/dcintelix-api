@@ -1,28 +1,24 @@
 import { prisma } from "../config/database";
 import { logger } from "../utils/logger";
 
-let isConnected = false;
 
 export const ensureDB = async () => {
-  if (isConnected) return; // Already connected
-  
   try {
-    await prisma.$connect();
-    isConnected = true;
-    logger.info("✅ Database connected");
+    await prisma.$queryRaw`SELECT 1`;
+    logger.info("✅ Database reachable");
   } catch (err) {
-    logger.error("❌ DB connection failed:", err);
-    isConnected = false;
+    logger.error("❌ DB check failed:", err);
     throw err;
   }
 };
 
-// Test connection on startup
+
 export const testDatabaseConnection = async () => {
+  if (process.env.NODE_ENV !== "development") return;
+
   try {
-    await prisma.$connect();
-    logger.info("✅ Database connection successful on startup");
-    isConnected = true;
+    await prisma.$queryRaw`SELECT 1`;
+    logger.info("✅ Database connection successful (startup test)");
   } catch (error) {
     logger.error("❌ DATABASE CONNECTION FAILED ON STARTUP", error);
     logger.error("Check your DATABASE_URL in .env file");
