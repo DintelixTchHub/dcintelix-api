@@ -1,11 +1,9 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../config/database';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { config } from '../config/env';
 import { logger } from '../utils/logger';
-
-const prisma = new PrismaClient();
 
 interface RegisterRequest {
   email: string;

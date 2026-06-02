@@ -1,35 +1,45 @@
 import { PrismaClient } from '@prisma/client';
-import { config } from './env';
 import { logger } from '../utils/logger';
 
-// Create a single Prisma Client instance with explicit configuration
-export const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: config.database.url,
-    },
-  },
-});
+// Singleton Prisma Client - lazy connect
+let prismaInstance: PrismaClient | null = null;
 
-export const connectDatabase = async (): Promise<void> => {
-  const databaseUrl = config.database.url;
+export const getPrismaInstance = (): PrismaClient => {
+  if (!prismaInstance) {
+    prismaInstance = new PrismaClient({
+      // Use environment DATABASE_URL directly
+      // Prisma handles connection pooling automatically
+    });
 
-  if (!databaseUrl) {
-    logger.error('DATABASE_URL is not defined in environment variables');
-    process.exit(1);
+    // Handle disconnection on process exit
+    process.on('SIGTERM', async () => {
+      await prismaInstance?.$disconnect();
+    });
+
+    process.on('SIGINT', async () => {
+      await prismaInstance?.$disconnect();
+    });
   }
 
+  return prismaInstance;
+};
+
+export const prisma = getPrismaInstance();
+
+export const connectDatabase = async (): Promise<void> => {
   try {
     await prisma.$connect();
-    logger.info('PostgreSQL connected successfully');
+    logger.info('Database connected');
   } catch (error) {
-    logger.error('PostgreSQL connection error:', error);
-    process.exit(1);
+    logger.error('Database connection error:', error);
+    throw error;
   }
 };
 
-// Graceful shutdown
 export const disconnectDatabase = async (): Promise<void> => {
-  await prisma.$disconnect();
-  logger.info('PostgreSQL disconnected');
+  if (prismaInstance) {
+    await prismaInstance.$disconnect();
+    prismaInstance = null;
+    logger.info('Database disconnected');
+  }
 };

@@ -1,30 +1,20 @@
-// 1️⃣ Load dotenv immediately
 import dotenv from "dotenv";
 dotenv.config();
 
-import express, { Application, Request, Response } from 'express';
-import cors from 'cors';
-import cookieParser from 'cookie-parser';
-import fs from 'fs';
-import { config } from './config/env';
-import { connectDatabase } from './config/database';
-import { logger } from './utils/logger';
-import { errorHandler, notFoundHandler } from './middleware/errorHandler';
-import contactRoutes from './router/contactRoutes';
-import newsletterRoutes from './router/newsletterRoutes';
-import authRoutes from './router/authRoutes';
+import express from "express";
+import cors from "cors";
+import cookieParser from "cookie-parser";
 
-const app: Application = express();
+import { config } from "./config/env";
+import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
+import contactRoutes from "./router/contactRoutes";
+import newsletterRoutes from "./router/newsletterRoutes";
+import authRoutes from "./router/authRoutes";
+import { ensureDB } from "./lib/db";
 
-// Create uploads directory if it doesn't exist
-if (!fs.existsSync('uploads')) {
-  fs.mkdirSync('uploads');
-}
+const app = express();
 
-// Create logs directory if it doesn't exist
-if (!fs.existsSync('logs')) {
-  fs.mkdirSync('logs');
-}
+// ✅ IMPORTANT: no fs, no server.listen
 
 // Middleware
 app.use(cors({
@@ -36,13 +26,25 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// ✅ Ensure DB connection per request (caches connection)
+app.use(async (req, res, next) => {
+  try {
+    await ensureDB();
+    next();
+  } catch (error) {
+    // Log and pass error to error handler
+    console.error("Database connection error on request:", error);
+    next(error);
+  }
+});
+
 // Routes
 app.use('/api/contact', contactRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/auth', authRoutes);
 
-// Health check endpoint
-app.get('/api/health', (req: Request, res: Response) => {
+// Health check
+app.get('/api/health', (req, res) => {
   res.status(200).json({
     success: true,
     message: 'API is running',
@@ -50,15 +52,9 @@ app.get('/api/health', (req: Request, res: Response) => {
   });
 });
 
-// Error handling
+// Errors
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-// Initialize database connection with proper error handling
-connectDatabase().catch((err) => {
-  logger.error('Database connection failed', err);
-  // Don't exit on Vercel - just log the error
-  // Serverless functions should handle errors gracefully
-});
-
+// ✅ THIS is what Vercel uses
 export default app;
