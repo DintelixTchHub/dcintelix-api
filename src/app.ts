@@ -11,29 +11,28 @@ import contactRoutes from "./router/contactRoutes";
 import newsletterRoutes from "./router/newsletterRoutes";
 import authRoutes from "./router/authRoutes";
 import { ensureDB } from "./lib/db";
+import { logger } from "./utils/logger";
 
 const app = express();
 
-// ✅ IMPORTANT: no fs, no server.listen
-
-// Middleware
+// Middleware - CORS
 app.use(cors({
   origin: config.frontendUrl,
   credentials: true,
 }));
 
+// Middleware - Parser
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ Ensure DB connection per request (caches connection)
+// Middleware - Ensure DB connection on request
 app.use(async (req, res, next) => {
   try {
     await ensureDB();
     next();
   } catch (error) {
-    // Log and pass error to error handler
-    console.error("Database connection error on request:", error);
+    logger.error("Database connection error on request:", error);
     next(error);
   }
 });
@@ -44,7 +43,7 @@ app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/auth', authRoutes);
 
 // Health check
-app.get('/api/health', (req, res) => {
+app.get('/health', (req, res) => {
   res.status(200).json({
     success: true,
     message: 'API is running',
@@ -52,9 +51,8 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Errors
+// Error handling
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-// ✅ THIS is what Vercel uses
 export default app;

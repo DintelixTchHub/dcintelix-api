@@ -6,4 +6,3 @@ node_modules
 dist
 logs
 yarn.lock
-index.ts
