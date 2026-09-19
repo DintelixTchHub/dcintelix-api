@@ -1,0 +1,826 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "DCIntelix API",
+    "version": "1.0.0",
+    "description": "DCIntelix backend API. Set API_PREFIX in the server environment; the default server URL assumes /api."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5003/",
+      "description": "Local development"
+    }
+  ],
+  "tags": [
+    { "name": "Auth" },
+    { "name": "Newsletter" },
+    { "name": "Contacts" },
+    { "name": "Testimonials" },
+    { "name": "Public Careers" },
+    { "name": "Admin Careers" }
+  ],
+  "security": [{ "bearerAuth": [] }],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "security": [],
+        "summary": "Register an admin",
+        "requestBody": {
+          "$ref": "#/components/requestBodies/AdminCredentials"
+        },
+        "responses": {
+          "201": { "$ref": "#/components/responses/AdminAuthResponse" },
+          "400": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "security": [],
+        "summary": "Log in an admin",
+        "requestBody": {
+          "$ref": "#/components/requestBodies/AdminCredentials"
+        },
+        "responses": {
+          "200": { "$ref": "#/components/responses/AdminAuthResponse" },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "security": [],
+        "summary": "Log out",
+        "responses": { "200": { "$ref": "#/components/responses/Message" } }
+      }
+    },
+    "/auth/profile": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Get the current admin profile",
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/newsletter/subscribe": {
+      "post": {
+        "tags": ["Newsletter"],
+        "security": [],
+        "summary": "Subscribe to the newsletter",
+        "requestBody": { "$ref": "#/components/requestBodies/Email" },
+        "responses": {
+          "201": { "$ref": "#/components/responses/Message" },
+          "400": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/newsletter/unsubscribe": {
+      "post": {
+        "tags": ["Newsletter"],
+        "security": [],
+        "summary": "Unsubscribe from the newsletter",
+        "requestBody": { "$ref": "#/components/requestBodies/Email" },
+        "responses": {
+          "200": { "$ref": "#/components/responses/Message" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/newsletter": {
+      "get": {
+        "tags": ["Newsletter"],
+        "summary": "List active subscribers",
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/Limit" }
+        ],
+        "responses": { "200": { "$ref": "#/components/responses/Paginated" } }
+      }
+    },
+    "/newsletter/stats": {
+      "get": {
+        "tags": ["Newsletter"],
+        "summary": "Get subscriber statistics",
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/newsletter/{email}": {
+      "delete": {
+        "tags": ["Newsletter"],
+        "summary": "Delete a subscriber",
+        "parameters": [{ "$ref": "#/components/parameters/EmailPath" }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Message" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/newsletter/send": {
+      "post": {
+        "tags": ["Newsletter"],
+        "summary": "Send a newsletter to active subscribers",
+        "requestBody": { "$ref": "#/components/requestBodies/BulkNewsletter" },
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/contacts": {
+      "post": {
+        "tags": ["Contacts"],
+        "security": [],
+        "summary": "Submit a contact form",
+        "requestBody": { "$ref": "#/components/requestBodies/ContactForm" },
+        "responses": {
+          "201": { "$ref": "#/components/responses/Success" },
+          "400": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "get": {
+        "tags": ["Contacts"],
+        "summary": "List contacts",
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/Limit" }
+        ],
+        "responses": { "200": { "$ref": "#/components/responses/Paginated" } }
+      }
+    },
+    "/contacts/{id}": {
+      "get": {
+        "tags": ["Contacts"],
+        "summary": "Get a contact",
+        "parameters": [{ "$ref": "#/components/parameters/Id" }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Contacts"],
+        "summary": "Delete a contact and its R2 attachment",
+        "parameters": [{ "$ref": "#/components/parameters/Id" }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Message" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/contacts/{id}/reply": {
+      "post": {
+        "tags": ["Contacts"],
+        "summary": "Reply to a contact",
+        "parameters": [{ "$ref": "#/components/parameters/Id" }],
+        "requestBody": { "$ref": "#/components/requestBodies/ContactReply" },
+        "responses": {
+          "200": { "$ref": "#/components/responses/Message" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/testimonials": {
+      "post": {
+        "tags": ["Testimonials"],
+        "security": [],
+        "summary": "Submit a testimonial",
+        "requestBody": { "$ref": "#/components/requestBodies/Testimonial" },
+        "responses": {
+          "201": { "$ref": "#/components/responses/Success" },
+          "400": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "get": {
+        "tags": ["Testimonials"],
+        "security": [],
+        "summary": "List approved testimonials",
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/testimonials/admin": {
+      "get": {
+        "tags": ["Testimonials"],
+        "summary": "List testimonials for admins",
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/Limit" },
+          { "$ref": "#/components/parameters/TestimonialStatusQuery" }
+        ],
+        "responses": { "200": { "$ref": "#/components/responses/Paginated" } }
+      }
+    },
+    "/testimonials/admin/{id}": {
+      "get": {
+        "tags": ["Testimonials"],
+        "summary": "Get an admin testimonial",
+        "parameters": [{ "$ref": "#/components/parameters/Id" }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "patch": {
+        "tags": ["Testimonials"],
+        "summary": "Update a testimonial",
+        "parameters": [{ "$ref": "#/components/parameters/Id" }],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/TestimonialUpdate"
+        },
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" },
+          "400": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Testimonials"],
+        "summary": "Delete a testimonial",
+        "parameters": [{ "$ref": "#/components/parameters/Id" }],
+        "responses": { "200": { "$ref": "#/components/responses/Message" } }
+      }
+    },
+    "/careers/jobs": {
+      "get": {
+        "tags": ["Public Careers"],
+        "security": [],
+        "summary": "List published jobs",
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/careers/jobs/{slug}": {
+      "get": {
+        "tags": ["Public Careers"],
+        "security": [],
+        "summary": "Get a published job by slug",
+        "parameters": [{ "$ref": "#/components/parameters/Slug" }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/careers/jobs/{jobId}/applications": {
+      "post": {
+        "tags": ["Public Careers"],
+        "security": [],
+        "summary": "Submit a job application",
+        "parameters": [{ "$ref": "#/components/parameters/JobId" }],
+        "requestBody": { "$ref": "#/components/requestBodies/ApplicationForm" },
+        "responses": {
+          "201": { "$ref": "#/components/responses/Success" },
+          "400": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/careers/general-applications": {
+      "post": {
+        "tags": ["Public Careers"],
+        "security": [],
+        "summary": "Submit a general application",
+        "requestBody": { "$ref": "#/components/requestBodies/ApplicationForm" },
+        "responses": {
+          "201": { "$ref": "#/components/responses/Success" },
+          "400": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/admin/careers/jobs": {
+      "post": {
+        "tags": ["Admin Careers"],
+        "summary": "Create a job",
+        "requestBody": { "$ref": "#/components/requestBodies/Job" },
+        "responses": {
+          "201": { "$ref": "#/components/responses/Success" },
+          "400": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "get": {
+        "tags": ["Admin Careers"],
+        "summary": "List admin jobs",
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/Limit" },
+          { "$ref": "#/components/parameters/JobStatusQuery" }
+        ],
+        "responses": { "200": { "$ref": "#/components/responses/Paginated" } }
+      }
+    },
+    "/admin/careers/jobs/{id}": {
+      "get": {
+        "tags": ["Admin Careers"],
+        "summary": "Get an admin job",
+        "parameters": [{ "$ref": "#/components/parameters/Id" }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "patch": {
+        "tags": ["Admin Careers"],
+        "summary": "Update a job",
+        "parameters": [{ "$ref": "#/components/parameters/Id" }],
+        "requestBody": { "$ref": "#/components/requestBodies/JobUpdate" },
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" },
+          "400": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Admin Careers"],
+        "summary": "Delete a job",
+        "parameters": [{ "$ref": "#/components/parameters/Id" }],
+        "responses": { "200": { "$ref": "#/components/responses/Message" } }
+      }
+    },
+    "/admin/careers/applications": {
+      "get": {
+        "tags": ["Admin Careers"],
+        "summary": "List applications",
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/Limit" },
+          { "$ref": "#/components/parameters/ApplicationStatusQuery" }
+        ],
+        "responses": { "200": { "$ref": "#/components/responses/Paginated" } }
+      }
+    },
+    "/admin/careers/applications/{id}": {
+      "get": {
+        "tags": ["Admin Careers"],
+        "summary": "Get an application",
+        "parameters": [{ "$ref": "#/components/parameters/Id" }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "patch": {
+        "tags": ["Admin Careers"],
+        "summary": "Update an application",
+        "parameters": [{ "$ref": "#/components/parameters/Id" }],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/ApplicationUpdate"
+        },
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" },
+          "400": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Admin Careers"],
+        "summary": "Delete an application and its R2 payment proof",
+        "parameters": [{ "$ref": "#/components/parameters/Id" }],
+        "responses": { "200": { "$ref": "#/components/responses/Message" } }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "adminCookie": { "type": "apiKey", "in": "cookie", "name": "adminToken" }
+    },
+    "parameters": {
+      "Id": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" }
+      },
+      "JobId": {
+        "name": "jobId",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" }
+      },
+      "Slug": {
+        "name": "slug",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" }
+      },
+      "EmailPath": {
+        "name": "email",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string", "format": "email" }
+      },
+      "Page": {
+        "name": "page",
+        "in": "query",
+        "schema": { "type": "integer", "minimum": 1, "default": 1 }
+      },
+      "Limit": {
+        "name": "limit",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 10
+        }
+      },
+      "JobStatusQuery": {
+        "name": "status",
+        "in": "query",
+        "schema": { "$ref": "#/components/schemas/JobStatus" }
+      },
+      "ApplicationStatusQuery": {
+        "name": "status",
+        "in": "query",
+        "schema": { "$ref": "#/components/schemas/ApplicationStatus" }
+      },
+      "TestimonialStatusQuery": {
+        "name": "status",
+        "in": "query",
+        "schema": { "$ref": "#/components/schemas/TestimonialStatus" }
+      }
+    },
+    "requestBodies": {
+      "AdminCredentials": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/AdminCredentials" }
+          }
+        }
+      },
+      "Email": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": ["email"],
+              "properties": { "email": { "type": "string", "format": "email" } }
+            }
+          }
+        }
+      },
+      "BulkNewsletter": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": ["subject", "content"],
+              "properties": {
+                "subject": { "type": "string" },
+                "content": { "type": "string" }
+              }
+            }
+          }
+        }
+      },
+      "ContactForm": {
+        "required": true,
+        "content": {
+          "multipart/form-data": {
+            "schema": { "$ref": "#/components/schemas/ContactForm" }
+          }
+        }
+      },
+      "ContactReply": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": ["subject", "message"],
+              "properties": {
+                "subject": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            }
+          }
+        }
+      },
+      "Testimonial": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/TestimonialCreate" }
+          }
+        }
+      },
+      "TestimonialUpdate": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/TestimonialUpdate" }
+          }
+        }
+      },
+      "ApplicationForm": {
+        "required": true,
+        "content": {
+          "multipart/form-data": {
+            "schema": { "$ref": "#/components/schemas/ApplicationForm" }
+          }
+        }
+      },
+      "Job": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/JobCreate" }
+          }
+        }
+      },
+      "JobUpdate": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/JobUpdate" }
+          }
+        }
+      },
+      "ApplicationUpdate": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ApplicationUpdate" }
+          }
+        }
+      }
+    },
+    "responses": {
+      "Success": {
+        "description": "Successful response",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Success" }
+          }
+        }
+      },
+      "Message": {
+        "description": "Successful response",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Message" }
+          }
+        }
+      },
+      "Paginated": {
+        "description": "Paginated response",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Paginated" }
+          }
+        }
+      },
+      "AdminAuthResponse": {
+        "description": "Authenticated admin",
+        "headers": { "Set-Cookie": { "schema": { "type": "string" } } },
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/AdminAuthResponse" }
+          }
+        }
+      },
+      "Error": {
+        "description": "Error response",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Success": {
+        "type": "object",
+        "required": ["success"],
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string" },
+          "data": {}
+        }
+      },
+      "Message": {
+        "type": "object",
+        "required": ["success", "message"],
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string" }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": ["success", "message"],
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "message": { "type": "string" }
+        }
+      },
+      "Paginated": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Success" },
+          {
+            "type": "object",
+            "properties": {
+              "pagination": { "$ref": "#/components/schemas/Pagination" }
+            }
+          }
+        ]
+      },
+      "Pagination": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer" },
+          "limit": { "type": "integer" },
+          "total": { "type": "integer" },
+          "pages": { "type": "integer" }
+        }
+      },
+      "AdminCredentials": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "minLength": 1 },
+          "name": { "type": "string" }
+        }
+      },
+      "Admin": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "name": { "type": ["string", "null"] },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "AdminAuthResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Success" },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "properties": {
+                  "admin": { "$ref": "#/components/schemas/Admin" },
+                  "token": { "type": "string" }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ContactForm": {
+        "type": "object",
+        "required": ["name", "email", "subject", "message"],
+        "properties": {
+          "name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "phone": { "type": "string" },
+          "subject": { "type": "string" },
+          "message": { "type": "string" },
+          "attachment": { "type": "string", "format": "binary" }
+        }
+      },
+      "TestimonialCreate": {
+        "type": "object",
+        "required": ["name", "email"],
+        "properties": {
+          "name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "role": { "type": "string" },
+          "testimonial": { "type": "string", "minLength": 20 },
+          "message": { "type": "string", "minLength": 20 }
+        },
+        "anyOf": [{ "required": ["testimonial"] }, { "required": ["message"] }]
+      },
+      "TestimonialUpdate": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "role": { "type": "string", "nullable": true },
+          "testimonial": { "type": "string", "minLength": 20 },
+          "status": { "$ref": "#/components/schemas/TestimonialStatus" },
+          "adminNote": { "type": "string", "nullable": true }
+        }
+      },
+      "ApplicationForm": {
+        "type": "object",
+        "required": ["name", "email"],
+        "properties": {
+          "name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "phone": { "type": "string" },
+          "coverLetter": { "type": "string" },
+          "resumeUrl": { "type": "string", "format": "uri" },
+          "resume": { "type": "string", "format": "uri" },
+          "paymentProof": { "type": "string", "format": "binary" }
+        }
+      },
+      "JobCreate": {
+        "type": "object",
+        "required": [
+          "title",
+          "slug",
+          "location",
+          "employmentType",
+          "description",
+          "responsibilities",
+          "requirements"
+        ],
+        "properties": {
+          "title": { "type": "string" },
+          "slug": { "type": "string" },
+          "department": { "type": "string" },
+          "location": { "type": "string" },
+          "employmentType": { "$ref": "#/components/schemas/EmploymentType" },
+          "opportunityType": {
+            "$ref": "#/components/schemas/OpportunityType",
+            "default": "TRAINING"
+          },
+          "workMode": {
+            "$ref": "#/components/schemas/WorkMode",
+            "default": "REMOTE"
+          },
+          "durationMonths": { "type": "integer", "minimum": 1, "maximum": 120 },
+          "monthlyFee": { "type": "number", "minimum": 0, "multipleOf": 0.01 },
+          "description": { "type": "string" },
+          "responsibilities": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string" }
+          },
+          "requirements": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string" }
+          },
+          "salaryRange": { "type": "string" },
+          "status": { "$ref": "#/components/schemas/JobStatus" },
+          "closesAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "JobUpdate": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "slug": { "type": "string" },
+          "department": { "type": "string", "nullable": true },
+          "location": { "type": "string" },
+          "employmentType": { "$ref": "#/components/schemas/EmploymentType" },
+          "opportunityType": { "$ref": "#/components/schemas/OpportunityType" },
+          "workMode": { "$ref": "#/components/schemas/WorkMode" },
+          "durationMonths": { "type": "integer", "minimum": 1, "maximum": 120, "nullable": true },
+          "monthlyFee": { "type": "number", "minimum": 0, "multipleOf": 0.01, "nullable": true },
+          "description": { "type": "string" },
+          "responsibilities": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+          "requirements": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+          "salaryRange": { "type": "string", "nullable": true },
+          "status": { "$ref": "#/components/schemas/JobStatus" },
+          "closesAt": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      },
+      "ApplicationUpdate": {
+        "type": "object",
+        "properties": {
+          "status": { "$ref": "#/components/schemas/ApplicationStatus" },
+          "paymentStatus": { "$ref": "#/components/schemas/PaymentStatus" },
+          "adminNote": { "type": "string", "nullable": true }
+        }
+      },
+      "EmploymentType": {
+        "type": "string",
+        "enum": ["FULL_TIME", "PART_TIME", "CONTRACT", "INTERNSHIP"]
+      },
+      "OpportunityType": { "type": "string", "enum": ["JOB", "TRAINING"] },
+      "WorkMode": { "type": "string", "enum": ["REMOTE", "ONSITE", "HYBRID"] },
+      "JobStatus": {
+        "type": "string",
+        "enum": ["DRAFT", "PUBLISHED", "CLOSED", "ARCHIVED"]
+      },
+      "ApplicationStatus": {
+        "type": "string",
+        "enum": ["RECEIVED", "REVIEWING", "SHORTLISTED", "REJECTED", "HIRED"]
+      },
+      "PaymentStatus": {
+        "type": "string",
+        "enum": [
+          "NOT_SUBMITTED",
+          "PENDING_VERIFICATION",
+          "VERIFIED",
+          "REJECTED"
+        ]
+      },
+      "TestimonialStatus": {
+        "type": "string",
+        "enum": ["PENDING", "APPROVED", "REJECTED"]
+      }
+    }
+  }
+}

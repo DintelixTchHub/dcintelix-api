@@ -1,4 +1,4 @@
-import nodemailer, { Transporter } from 'nodemailer';
+import { Resend } from 'resend';
 import { config } from '../config/env';
 import { logger } from '../utils/logger';
 
@@ -8,76 +8,88 @@ export interface EmailOptions {
   html: string;
   attachments?: Array<{
     filename: string;
-    path: string;
+    content: Buffer;
   }>;
 }
 
 class EmailService {
-  private transporter: Transporter;
+  private resend: Resend | null;
 
   constructor() {
-    this.transporter = nodemailer.createTransport({
-      host: config.smtp.host,
-      port: config.smtp.port,
-      secure: config.smtp.port === 465, // true for 465, false for other ports
-      auth: {
-        user: config.smtp.user,
-        pass: config.smtp.pass,
-      },
-      tls: {
-        rejectUnauthorized: false,
-      },
-    });
+    this.resend = config.resend.apiKey ? new Resend(config.resend.apiKey) : null;
   }
 
   async verifyConnection(): Promise<boolean> {
     try {
-      await this.transporter.verify();
-      logger.info('SMTP connection verified successfully');
+      if (!this.resend || !config.resend.apiKey) {
+        logger.error('Resend API key is missing');
+        return false;
+      }
+
+      logger.info('Resend configuration detected successfully');
       return true;
     } catch (error) {
-      logger.error('SMTP connection verification failed:', error);
+      logger.error('Resend connection verification failed:', error);
       return false;
     }
   }
 
   async sendEmail(options: EmailOptions, retryCount: number = 2): Promise<boolean> {
+    if (!this.resend || !config.resend.apiKey) {
+      logger.error('Resend API key is missing. Email not sent.');
+      return false;
+    }
+
     let lastError: any;
-    
+
     for (let attempt = 1; attempt <= retryCount; attempt++) {
       try {
-        const mailOptions = {
-          from: config.smtp.from,
-          to: options.to,
+        const attachments = options.attachments?.length
+          ? await Promise.all(
+              options.attachments.map(async (attachment) => ({
+                filename: attachment.filename,
+                content: attachment.content,
+              }))
+            )
+          : undefined;
+
+        const emailPayload = {
+          from: config.resend.from,
+          to: options.to.split(',').map((email) => email.trim()).filter(Boolean),
           subject: options.subject,
           html: options.html,
-          attachments: options.attachments,
+          attachments,
         };
 
-        await this.transporter.sendMail(mailOptions);
+        const response = await this.resend.emails.send(emailPayload);
+
+        if (response.error) {
+          throw new Error(response.error.message || 'Resend API returned an error');
+        }
+
         logger.info(`Email sent successfully to ${options.to}`);
         return true;
       } catch (error: any) {
         lastError = error;
         const errorMessage = error?.message || 'Unknown error';
-        const errorCode = error?.code || 'UNKNOWN';
-        
+        const errorCode = error?.statusCode || error?.code || 'UNKNOWN';
+
         if (attempt < retryCount) {
           logger.warn(`Email send attempt ${attempt} failed, retrying...`, {
             message: errorMessage,
             code: errorCode,
           });
-          // Wait before retry
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
         } else {
           logger.error(`Error sending email to ${options.to} after ${retryCount} attempts:`, {
             message: errorMessage,
             code: errorCode,
-            command: error?.command,
           });
         }
       }
     }
+
+    logger.error('Email send failed with last known error:', lastError);
     return false;
   }
 
@@ -86,17 +98,18 @@ class EmailService {
     email: string,
     subject: string,
     message: string,
-    phone?: string
+    phone?: string,
+    attachment?: Express.Multer.File,
   ): Promise<boolean> {
     const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
         <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #F9FAFC; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background-color: #4a90d9; color: white; padding: 20px; text-align: center; }
-          .content { padding: 20px; background-color: #f9f9f9; }
+          .header { background-color: #0D6D63; color: white; padding: 20px; text-align: center; }
+          .content { padding: 20px; background-color: #F9FAFC; }
           .field { margin-bottom: 15px; }
           .label { font-weight: bold; }
         </style>
@@ -133,6 +146,9 @@ class EmailService {
       to: config.smtp.user, // Send to admin email
       subject: `Contact Form: ${subject}`,
       html: htmlContent,
+      attachments: attachment
+        ? [{ filename: attachment.originalname, content: attachment.buffer }]
+        : undefined,
     });
   }
 
@@ -142,11 +158,11 @@ class EmailService {
       <html>
       <head>
         <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #F9FAFC; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background-color: #4a90d9; color: white; padding: 20px; text-align: center; }
-          .content { padding: 20px; background-color: #f9f9f9; text-align: center; }
-          .button { display: inline-block; padding: 10px 20px; background-color: #4a90d9; color: white; text-decoration: none; border-radius: 5px; }
+          .header { background-color: #0D6D63; color: white; padding: 20px; text-align: center; }
+          .content { padding: 20px; background-color: #F9FAFC; text-align: center; }
+          .button { display: inline-block; padding: 10px 20px; background-color: #0D6D63; color: white; text-decoration: none; border-radius: 5px; }
         </style>
       </head>
       <body>
@@ -177,10 +193,10 @@ class EmailService {
       <html>
       <head>
         <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #F9FAFC; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background-color: #4a90d9; color: white; padding: 20px; text-align: center; }
-          .content { padding: 20px; background-color: #f9f9f9; }
+          .header { background-color: #0D6D63; color: white; padding: 20px; text-align: center; }
+          .content { padding: 20px; background-color: #F9FAFC; }
         </style>
       </head>
       <body>
@@ -215,11 +231,11 @@ class EmailService {
       <html>
       <head>
         <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #F9FAFC; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background-color: #0d9488; color: white; padding: 20px; text-align: center; }
-          .content { padding: 20px; background-color: #f9f9f9; }
-          .footer { padding: 15px; background-color: #eee; text-align: center; font-size: 12px; color: #666; }
+          .header { background-color: #0D6D63; color: white; padding: 20px; text-align: center; }
+          .content { padding: 20px; background-color: #F9FAFC; }
+          .footer { padding: 15px; background-color: #F9FAFC; text-align: center; font-size: 12px; color: #666; }
         </style>
       </head>
       <body>
@@ -261,12 +277,12 @@ class EmailService {
       <html>
       <head>
         <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #F9FAFC; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background-color: #0d9488; color: white; padding: 20px; text-align: center; }
-          .content { padding: 20px; background-color: #f9f9f9; }
-          .footer { padding: 15px; background-color: #eee; text-align: center; font-size: 12px; color: #666; }
-          .unsubscribe { color: #666; text-decoration: underline; }
+          .header { background-color: #0D6D63; color: white; padding: 20px; text-align: center; }
+          .content { padding: 20px; background-color: #F9FAFC; }
+          .footer { padding: 15px; background-color: #F9FAFC; text-align: center; font-size: 12px; color: #666; }
+          .unsubscribe { color: #0D6D63; text-decoration: underline; }
         </style>
       </head>
       <body>

@@ -11,8 +11,8 @@ import { authMiddleware } from '../middleware/authMiddleware';
 
 const router = Router();
 
-// Submit a new contact form - eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.post('/', submitContact);
+// Submit a new contact form
+router.post('/', upload.single('attachment'), submitContact);
 
 // Get all contacts (with pagination) - admin only
 router.get('/', authMiddleware, getAllContacts);

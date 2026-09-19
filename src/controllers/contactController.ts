@@ -3,6 +3,10 @@ import { createContactRecord, findAllContacts, findContactById, removeContact, u
 import { emailService } from '../services/emailService';
 import { logger } from '../utils/logger';
 import { createError } from '../middleware/errorHandler';
+import { createTestimonialRecord } from '../helper/testimonialModel';
+import { deletePrivateFile, getPrivateFileUrl, uploadPrivateFile } from '../services/r2Service';
+import { randomUUID } from 'crypto';
+import path from 'path';
 
 export interface ContactRequestBody {
   name: string;
@@ -35,43 +39,68 @@ export const submitContact = async (
       throw createError('Please provide a valid email address', 400);
     }
 
-    // Get attachment path if file was uploaded
-    const attachment = req.file ? req.file.path : undefined;
-
-    // Save contact to database using Prisma
-    const contact = await createContactRecord({
-      name,
-      email,
-      phone,
-      subject,
-      message,
-      attachment,
-    });
-
-    logger.info(`New contact saved: ${contact.id}`);
-
-    // Send email notification
-    const emailSent = await emailService.sendContactEmail(
-      name,
-      email,
-      subject,
-      message,
-      phone
-    );
-
-    if (!emailSent) {
-      logger.warn('Failed to send contact email notification');
+    if (subject.trim().toLowerCase() === 'testimonial') {
+      const roleMatch = message.match(/\n\nRole or organization:\s*(.*)$/s);
+      const testimonial = roleMatch ? message.slice(0, roleMatch.index).trim() : message.trim();
+      const role = roleMatch?.[1] === 'Not provided' ? undefined : roleMatch?.[1]?.trim();
+      if (testimonial.length < 20) {
+        throw createError('Testimonial must be at least 20 characters', 400);
+      }
+      const record = await createTestimonialRecord({ name, email, role, testimonial });
+      logger.info(`New testimonial submitted: ${record.id}`);
+      res.status(201).json({
+        success: true,
+        message: 'Thank you for sharing your testimonial. We will review it before publishing.',
+        data: { id: record.id, name: record.name, email: record.email },
+      });
+      return;
     }
 
-    res.status(201).json({
-      success: true,
-      message: 'Thank you for contacting us! We will get back to you soon.',
-      data: {
-        id: contact.id,
-        name: contact.name,
-        email: contact.email,
-      },
-    });
+    const file = req.file;
+    const attachmentKey = file
+      ? `contact-attachments/${new Date().getUTCFullYear()}/${randomUUID()}${path.extname(file.originalname).toLowerCase()}`
+      : undefined;
+
+    try {
+      if (file && attachmentKey) await uploadPrivateFile(file, attachmentKey);
+
+      const contact = await createContactRecord({
+        name,
+        email,
+        phone,
+        subject,
+        message,
+        attachment: attachmentKey,
+      });
+
+      logger.info(`New contact saved: ${contact.id}`);
+
+      const emailSent = await emailService.sendContactEmail(
+        name,
+        email,
+        subject,
+        message,
+        phone,
+        file,
+      );
+
+      if (!emailSent) {
+        logger.warn('Failed to send contact email notification');
+      }
+
+      res.status(201).json({
+        success: true,
+        message: 'Thank you for contacting us! We will get back to you soon.',
+        data: {
+          id: contact.id,
+          name: contact.name,
+          email: contact.email,
+        },
+      });
+    } catch (error) {
+      if (attachmentKey) await deletePrivateFile(attachmentKey).catch(() => undefined);
+      throw error;
+    }
   } catch (error) {
     next(error);
   }
@@ -123,9 +152,13 @@ export const getContactById = async (
       contact.isRead = true;
     }
 
+    const attachmentUrl = contact.attachment
+      ? await getPrivateFileUrl(contact.attachment)
+      : undefined;
+
     res.status(200).json({
       success: true,
-      data: contact,
+      data: { ...contact, attachmentUrl },
     });
   } catch (error) {
     next(error);
@@ -146,6 +179,11 @@ export const deleteContact = async (
     }
 
     await removeContact(contactId);
+    if (contact.attachment) {
+      await deletePrivateFile(contact.attachment).catch((error) => {
+        logger.warn(`Failed to delete contact attachment for ${contactId}`, error);
+      });
+    }
 
     logger.info(`Contact deleted: ${contactId}`);
 

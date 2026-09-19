@@ -1,18 +1,9 @@
-import multer, { FileFilterCallback, StorageEngine } from 'multer';
+import multer from 'multer';
 import path from 'path';
 import { logger } from '../utils/logger';
 import { Request, Response } from 'express';
 
-// Configure storage
-const storage: StorageEngine = multer.diskStorage({
-  destination: (req: any, file: any, cb: any): void => {
-    cb(null, 'uploads/');
-  },
-  filename: (req: any, file: any, cb: any): void => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  },
-});
+const storage = multer.memoryStorage();
 
 // File filter - using any to avoid type conflicts with multer types
 const fileFilter = (req: any, file: any, cb: any): void => {

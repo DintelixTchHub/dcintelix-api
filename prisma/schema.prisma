@@ -49,3 +49,114 @@ model Admin {
 
   @@index([email])
 }
+
+enum TestimonialStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Testimonial {
+  id          String            @id @default(uuid())
+  name        String
+  email       String
+  role        String?
+  testimonial String
+  status      TestimonialStatus @default(PENDING)
+  adminNote   String?
+  approvedAt  DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([email])
+}
+
+enum JobStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+  ARCHIVED
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+}
+
+enum CareerOpportunityType {
+  JOB
+  TRAINING
+}
+
+enum WorkMode {
+  REMOTE
+  ONSITE
+  HYBRID
+}
+
+enum CareerApplicationStatus {
+  RECEIVED
+  REVIEWING
+  SHORTLISTED
+  REJECTED
+  HIRED
+}
+
+enum PaymentStatus {
+  NOT_SUBMITTED
+  PENDING_VERIFICATION
+  VERIFIED
+  REJECTED
+}
+
+model CareerJob {
+  id               String              @id @default(uuid())
+  title            String
+  slug             String              @unique
+  department       String?
+  location         String
+  employmentType   EmploymentType
+  opportunityType  CareerOpportunityType @default(TRAINING)
+  workMode         WorkMode              @default(REMOTE)
+  durationMonths   Int?
+  monthlyFee       Decimal?              @db.Decimal(12, 2)
+  description      String
+  responsibilities String[]
+  requirements     String[]
+  salaryRange      String?
+  status           JobStatus           @default(DRAFT)
+  closesAt         DateTime?
+  applications     CareerApplication[]
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([department])
+}
+
+model CareerApplication {
+  id          String                  @id @default(uuid())
+  jobId       String?
+  job         CareerJob?              @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  name        String
+  email       String
+  phone       String?
+  coverLetter String?
+  resumeUrl   String?
+  paymentProofKey          String?
+  paymentProofOriginalName String?
+  paymentProofMimeType     String?
+  paymentProofSize         Int?
+  paymentStatus            PaymentStatus @default(NOT_SUBMITTED)
+  status      CareerApplicationStatus @default(RECEIVED)
+  adminNote   String?
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+
+  @@index([jobId])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([email])
+}

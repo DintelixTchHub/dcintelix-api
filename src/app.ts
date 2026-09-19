@@ -7,11 +7,9 @@ import cookieParser from "cookie-parser";
 
 import { config } from "./config/env";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
-import contactRoutes from "./router/contactRoutes";
-import newsletterRoutes from "./router/newsletterRoutes";
-import authRoutes from "./router/authRoutes";
 import { ensureDB } from "./lib/db";
 import { logger } from "./utils/logger";
+import mainRouter from "./router";
 
 const app = express();
 
@@ -37,17 +35,17 @@ app.use(async (req, res, next) => {
   }
 });
 
+const apiPrefix = process.env.API_PREFIX;
+
 // Routes
-app.use('/api/contact', contactRoutes);
-app.use('/api/newsletter', newsletterRoutes);
-app.use('/api/auth', authRoutes);
+app.use(`${apiPrefix}/`, mainRouter);
+
 
 // Health check
-app.get('/health', (req, res) => {
+app.get('/', (req, res) => {
   res.status(200).json({
     success: true,
     message: 'API is running',
-    timestamp: new Date().toISOString(),
   });
 });
 
