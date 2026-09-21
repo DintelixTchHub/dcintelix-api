@@ -13,6 +13,12 @@ import mainRouter from "./router";
 
 const app = express();
 
+// Log every incoming request before route and database handling.
+app.use((req, _res, next) => {
+  logger.info(`Incoming request: ${req.method} ${req.originalUrl}`);
+  next();
+});
+
 // Middleware - CORS
 app.use(cors({
   origin: config.frontendUrl,

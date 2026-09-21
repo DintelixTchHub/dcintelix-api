@@ -11,7 +11,7 @@ import {
   deleteJob,
   findApplicationById,
   findJobById,
-  findJobBySlug,
+  findPublishedJobByIdentifier,
   listAdminJobs,
   listApplications,
   listPublishedJobs,
@@ -88,7 +88,7 @@ export const getJobBySlug = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const job = await findJobBySlug(req.params.slug);
+    const job = await findPublishedJobByIdentifier(req.params.slug);
     if (!job) throw createError("Job not found", 404);
     res.json({ success: true, data: job });
   } catch (error) {

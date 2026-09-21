@@ -22,6 +22,14 @@ export const findJobBySlug = (slug: string) =>
     where: { slug, status: JobStatus.PUBLISHED },
     include: { _count: { select: { applications: true } } },
   });
+export const findPublishedJobByIdentifier = (identifier: string) =>
+  prisma.careerJob.findFirst({
+    where: {
+      status: JobStatus.PUBLISHED,
+      OR: [{ id: identifier }, { slug: identifier }],
+    },
+    include: { _count: { select: { applications: true } } },
+  });
 export const listAdminJobs = (skip: number, take: number, status?: JobStatus) =>
   Promise.all([
     prisma.careerJob.findMany({
