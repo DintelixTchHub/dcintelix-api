@@ -1,0 +1,1 @@
+ALTER TABLE "CareerJob" ADD COLUMN "deadline" TIMESTAMP(3);

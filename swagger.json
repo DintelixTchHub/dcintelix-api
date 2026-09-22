@@ -763,6 +763,7 @@
           },
           "salaryRange": { "type": "string" },
           "status": { "$ref": "#/components/schemas/JobStatus" },
+          "deadline": { "type": "string", "format": "date-time" },
           "closesAt": { "type": "string", "format": "date-time" }
         }
       },
@@ -783,6 +784,7 @@
           "requirements": { "type": "array", "minItems": 1, "items": { "type": "string" } },
           "salaryRange": { "type": "string", "nullable": true },
           "status": { "$ref": "#/components/schemas/JobStatus" },
+          "deadline": { "type": "string", "format": "date-time", "nullable": true },
           "closesAt": { "type": "string", "format": "date-time", "nullable": true }
         }
       },

@@ -128,6 +128,7 @@ model CareerJob {
   requirements     String[]
   salaryRange      String?
   status           JobStatus           @default(DRAFT)
+  deadline         DateTime?
   closesAt         DateTime?
   applications     CareerApplication[]
   createdAt        DateTime            @default(now())

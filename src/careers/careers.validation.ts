@@ -119,6 +119,8 @@ export const validateCreateJob = (
     ? undefined
     : monthlyFee(body.monthlyFee);
   validateTrainingDetails(opportunityType, durationMonths, fee);
+  const deadlineValue = body.deadline ?? body.closesAt;
+  const deadline = deadlineValue === undefined ? undefined : parseDate(deadlineValue, "Deadline");
   return {
     title: text(body.title, "Title") as string,
     slug: (text(body.slug, "Slug") as string).toLowerCase().replace(/\s+/g, "-"),
@@ -137,16 +139,14 @@ export const validateCreateJob = (
     body.status === undefined
       ? undefined
       : oneOf(body.status, Object.values(JobStatus), "job status"),
-    closesAt:
-    body.closesAt === undefined
-      ? undefined
-      : parseDate(body.closesAt, "Close date"),
+    deadline,
+    closesAt: deadline,
   };
 };
 
 export const validateUpdateJob = (
   body: Record<string, unknown>,
-  current?: Pick<CreateJobInput, "opportunityType" | "employmentType" | "workMode" | "durationMonths" | "monthlyFee">,
+  current?: Pick<CreateJobInput, "opportunityType" | "employmentType" | "workMode" | "durationMonths" | "monthlyFee" | "deadline" | "closesAt">,
 ): UpdateJobInput => {
   const input: UpdateJobInput = {};
   if (body.title !== undefined)
@@ -187,8 +187,12 @@ export const validateUpdateJob = (
     input.salaryRange = text(body.salaryRange, "Salary range", false);
   if (body.status !== undefined)
     input.status = oneOf(body.status, Object.values(JobStatus), "job status");
-  if (body.closesAt !== undefined)
-    input.closesAt = parseDate(body.closesAt, "Close date");
+  const deadlineValue = body.deadline ?? body.closesAt;
+  if (deadlineValue !== undefined) {
+    const deadline = parseDate(deadlineValue, "Deadline");
+    input.deadline = deadline;
+    input.closesAt = deadline;
+  }
   if (input.opportunityType || input.employmentType || input.workMode || current) {
     const opportunityType = input.opportunityType ?? current?.opportunityType ?? CareerOpportunityType.TRAINING;
     const employmentType = input.employmentType ?? current?.employmentType ?? EmploymentType.FULL_TIME;

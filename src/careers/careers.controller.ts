@@ -103,10 +103,11 @@ export const submitJobApplication = async (
 ): Promise<void> => {
   try {
     const job = await findJobById(req.params.jobId);
+    const deadline = job?.deadline ?? job?.closesAt;
     if (
       !job ||
       job.status !== JobStatus.PUBLISHED ||
-      (job.closesAt && job.closesAt <= new Date())
+      (deadline && deadline <= new Date())
     )
       throw createError("Job is not accepting applications", 404);
     const application = await submitApplication(req, job.id);

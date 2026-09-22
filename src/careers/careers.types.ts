@@ -21,7 +21,8 @@ export interface CreateJobInput {
   requirements: string[];
   salaryRange?: string;
   status?: JobStatus;
-  closesAt?: Date;
+  deadline?: Date | null;
+  closesAt?: Date | null;
 }
 
 export interface UpdateJobInput extends Partial<CreateJobInput> {}

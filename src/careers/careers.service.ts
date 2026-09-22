@@ -13,7 +13,12 @@ export const listPublishedJobs = () =>
   prisma.careerJob.findMany({
     where: {
       status: JobStatus.PUBLISHED,
-      OR: [{ closesAt: null }, { closesAt: { gt: new Date() } }],
+      OR: [
+        { deadline: null },
+        { deadline: { gt: new Date() } },
+        { closesAt: null },
+        { closesAt: { gt: new Date() } },
+      ],
     },
     orderBy: { createdAt: "desc" },
   });
